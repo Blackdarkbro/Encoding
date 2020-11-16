@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -44,7 +45,14 @@ public class WorkWithSettings : MonoBehaviour
             {
                 if (!File.Exists(outPath))
                 {
-                    File.WriteAllBytes(outPath, uwr.downloadHandler.data);
+                    try
+                    {
+                        File.WriteAllBytes(outPath, uwr.downloadHandler.data);
+                    }
+                    catch (IOException e)
+                    {
+                        Debug.Log($"Writing loaded file exception: {e.Message}");
+                    }
                 }
                 
                 var filePath = UnzipFile(outPath);
@@ -60,9 +68,17 @@ public class WorkWithSettings : MonoBehaviour
     private static string UnzipFile(string path)
     {
         var unzipFilePath = Path.Combine(Application.persistentDataPath, "settings.json");
+        
         if (!File.Exists(unzipFilePath))
         {
-            ZipFile.ExtractToDirectory(path, Application.persistentDataPath);
+            try
+            {
+                ZipFile.ExtractToDirectory(path, Application.persistentDataPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log($"Unzip exception: {ex.Message}");
+            }
         }
 
         return unzipFilePath;
@@ -70,8 +86,16 @@ public class WorkWithSettings : MonoBehaviour
 
     private static Settings GetSettingsObject(string filePath)
     {
-        var jsonObj = File.ReadAllText(filePath);
-        return JsonUtility.FromJson<Settings>(jsonObj);
+        try
+        {
+            var jsonObj = File.ReadAllText(filePath);
+            return JsonUtility.FromJson<Settings>(jsonObj);
+        }
+        catch (IOException ex)
+        {
+            Debug.Log($"IOException: {ex.Message}");
+            return new Settings();
+        }
     }
 
     private static int GetSpeedSetting(Settings settings)
